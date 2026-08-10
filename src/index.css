@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Space Grotesk', ui-sans-serif, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-paper: #EEF1ED;
+  --color-paper-raised: #FFFFFF;
+  --color-ink: #16211C;
+  --color-ink-soft: #4B5A52;
+  --color-ink-faint: #8B9990;
+  --color-line: #D9DED6;
+
+  --color-forest: #1C6B4C;
+  --color-forest-dark: #124A34;
+  --color-forest-light: #E4F0EA;
+
+  --color-navy: #1B2A4A;
+  --color-navy-light: #E7EAF1;
+
+  --color-amber: #C98A2C;
+  --color-amber-light: #FBF0DD;
+
+  --color-clay: #B94A3E;
+  --color-clay-light: #FBE8E5;
+
+  --color-dark-bg: #10241C;
+  --color-dark-surface: #16302A;
+  --color-dark-line: #2A473C;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+html.dark body {
+  background: var(--color-dark-bg);
+  color: #E7EFE9;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Ledger stub card: torn-receipt perforated top edge */
+.ledger-stub {
+  position: relative;
+}
+.ledger-stub::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-image: radial-gradient(circle at 6px 0px, transparent 4px, var(--color-paper) 4.5px);
+  background-size: 12px 6px;
+  background-repeat: repeat-x;
+}
+html.dark .ledger-stub::before {
+  background-image: radial-gradient(circle at 6px 0px, transparent 4px, var(--color-dark-bg) 4.5px);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
+html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-dark-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+}
