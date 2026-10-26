@@ -13,17 +13,28 @@ export default defineConfig({
       manifest: {
         name: 'SpendWise - Personal Expense Tracker',
         short_name: 'SpendWise',
-        description: 'Track your money privately. Your data stays on your device.',
+        description: 'Track your money privately on mobile storage. Resets daily at 12:01 AM with auto UPI detection.',
         theme_color: '#1C6B4C',
         background_color: '#EEF1ED',
         display: 'standalone',
+        orientation: 'portrait-primary',
         start_url: '/',
         scope: '/',
+        categories: ['finance', 'productivity', 'utilities'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        share_target: {
+          action: '/dashboard',
+          method: 'GET',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
+          },
+        },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

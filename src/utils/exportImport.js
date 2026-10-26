@@ -1,4 +1,4 @@
-import { db } from '../db/database'
+import { db } from '../db/database.js'
 
 export async function buildBackupObject() {
   const [transactions, budgets, settings] = await Promise.all([

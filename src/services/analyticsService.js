@@ -1,4 +1,5 @@
 import { db } from '../db/database'
+import { getCycleDate } from '../utils/dateHelpers'
 
 function ymKey(dateStr) {
   return dateStr.slice(0, 7) // 'YYYY-MM'
@@ -20,7 +21,7 @@ function shiftMonth(ym, delta) {
 
 export async function getDashboardStats() {
   const all = await db.transactions.toArray()
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = getCycleDate(new Date())
   const thisMonth = currentMonthKey()
   const lastMonth = shiftMonth(thisMonth, -1)
 

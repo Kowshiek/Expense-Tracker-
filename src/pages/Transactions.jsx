@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Receipt, SlidersHorizontal } from 'lucide-react'
+import { Receipt, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransactions'
 import SearchBar from '../components/SearchBar'
 import FilterPanel from '../components/FilterPanel'
@@ -15,7 +15,7 @@ import { useToast } from '../context/ToastContext'
 import { useConfirm } from '../context/ConfirmContext'
 import { getCategoryMeta } from '../utils/constants'
 import { formatCurrency } from '../utils/currency'
-import { formatDate, formatDateTime } from '../utils/dateHelpers'
+import { formatDate, formatDateTime, getCycleDate, toLocalDateStr } from '../utils/dateHelpers'
 import { useSettings } from '../hooks/useSettings'
 
 const PAGE_SIZE = 15
@@ -89,8 +89,55 @@ export default function Transactions() {
 
   if (loading) return <LoadingSpinner label="Loading transactions…" />
 
+  const todayKey = getCycleDate(new Date())
+  const yesterdayDate = new Date()
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+  const yesterdayKey = toLocalDateStr(yesterdayDate)
+
   return (
     <div className="space-y-4">
+      {/* Historical Retention Assurance Banner */}
+      <div className="rounded-xl bg-forest-light/50 dark:bg-dark-surface border border-forest/20 p-3 flex items-center gap-2.5 text-xs text-ink-soft dark:text-ink-faint">
+        <ShieldCheck size={16} className="text-forest shrink-0" />
+        <span>
+          <strong>Permanent Ledger:</strong> Previous days' logs are never deleted. When a new 12:01 AM daily cycle starts, past logs remain permanently recorded and searchable.
+        </span>
+      </div>
+
+      {/* Quick History Tabs */}
+      <div className="flex flex-wrap gap-2 text-xs">
+        <button
+          onClick={() => resetPageFilters({ ...filters, date: '' })}
+          className={`px-3 py-1.5 rounded-xl font-medium transition-colors ${
+            !filters.date
+              ? 'bg-forest text-white'
+              : 'border border-line dark:border-dark-line text-ink-soft dark:text-ink-faint hover:bg-paper dark:hover:bg-dark-bg'
+          }`}
+        >
+          All History ({transactions.length})
+        </button>
+        <button
+          onClick={() => resetPageFilters({ ...filters, date: todayKey })}
+          className={`px-3 py-1.5 rounded-xl font-medium transition-colors ${
+            filters.date === todayKey
+              ? 'bg-forest text-white'
+              : 'border border-line dark:border-dark-line text-ink-soft dark:text-ink-faint hover:bg-paper dark:hover:bg-dark-bg'
+          }`}
+        >
+          Today's Cycle
+        </button>
+        <button
+          onClick={() => resetPageFilters({ ...filters, date: yesterdayKey })}
+          className={`px-3 py-1.5 rounded-xl font-medium transition-colors ${
+            filters.date === yesterdayKey
+              ? 'bg-forest text-white'
+              : 'border border-line dark:border-dark-line text-ink-soft dark:text-ink-faint hover:bg-paper dark:hover:bg-dark-bg'
+          }`}
+        >
+          Yesterday's Logs
+        </button>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3">
         <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1) }} />
         <button

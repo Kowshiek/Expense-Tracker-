@@ -13,21 +13,17 @@ different devices get two completely separate, private datasets.
 
 ## Features
 
-- **Dashboard** — total balance, income, expenses, savings, this month's and
-  today's expenses, transaction count, and month-over-month comparisons.
-- **Add expense / Add income** — validated forms with categories, sources,
-  payment methods, dates, and notes.
-- **Transactions** — search, filter (category, type, payment method, date),
-  sort, pagination, view/edit/delete with a confirmation dialog.
-- **Analytics** — category donut chart, monthly bar chart, income vs
-  expense chart, 30-day daily spending line chart, top categories.
-- **Budgets** — per-category monthly budgets with progress bars, 80%
-  warning and 100% exceeded states.
-- **Monthly reports** — income, expenses, savings, highest category,
-  highest transaction, average daily spend, per selected month.
-- **Backup & restore** — export a full JSON backup, export a CSV of
-  transactions, import a JSON backup (validated before insert), see last
-  backup date, storage usage, and clear all data (with a strong confirmation).
+- **12:01 AM Daily Tracking Cycle** — Starts a fresh daily expense cycle every morning at 12:01 AM with live countdown, rollover alert notifications, and recommended daily spending targets.
+- **⚡ UPI & Banking Auto-Detection** — Automatically parses debit and credit SMS notifications from all Indian UPI apps (Google Pay, PhonePe, Paytm, BHIM, CRED) and banks (HDFC, SBI, ICICI, Axis, Kotak, PNB, etc.). Debited amounts are logged as **Expense** and credited amounts as **Income** with the bank name attached.
+- **📲 Download in Chrome & Mobile Storage** — Download/install option in Google Chrome on Android & Desktop. Uses the phone's native IndexedDB as the primary private database with guaranteed persistent mobile storage.
+- **🐙 Automated GitHub Repository Sync** — Automatically commits and pushes mobile transactions to [https://github.com/Kowshiek/Expense-Tracker-](https://github.com/Kowshiek/Expense-Tracker-) in real time or on schedule.
+- **Dashboard** — total balance, income, expenses, savings, this month's and today's expenses (since 12:01 AM), transaction count, and month-over-month comparisons.
+- **Add expense / Add income** — validated forms with 1-click UPI auto-fill, categories, sources, payment methods, dates, and notes.
+- **Transactions** — search, filter (category, type, payment method, date), sort, pagination, view/edit/delete with a confirmation dialog.
+- **Analytics** — category donut chart, monthly bar chart, income vs expense chart, 30-day daily spending line chart, top categories.
+- **Budgets** — per-category monthly budgets with progress bars, 80% warning and 100% exceeded states.
+- **Monthly reports** — income, expenses, savings, highest category, highest transaction, average daily spend, per selected month.
+- **Backup & restore** — export a full JSON backup, export a CSV of transactions, import a JSON backup (validated before insert), see last backup date, storage usage, and clear all data (with a strong confirmation).
 - **Currency** — INR, USD, EUR, GBP, JPY, formatted throughout the app.
 - **Dark mode** — light / dark / system, persisted locally.
 - **Responsive** — bottom navigation on mobile, sidebar on desktop.

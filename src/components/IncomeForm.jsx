@@ -5,16 +5,50 @@ import { useSettings } from '../hooks/useSettings'
 import { getCurrencySymbol } from '../utils/currency'
 import CategorySelector from './CategorySelector'
 import DatePicker from './DatePicker'
+import { Zap } from 'lucide-react'
+import { parseUpiMessage } from '../services/upiService'
+import { useToast } from '../context/ToastContext'
 
 const emptyState = {
-  amount: '', title: '', category: 'Salary', date: todayStr(), paymentMethod: 'Bank Transfer', notes: '',
+  amount: '', title: '', category: 'Salary', date: todayStr(), paymentMethod: 'UPI', notes: '',
 }
 
 export default function IncomeForm({ initial, onSubmit, onCancel, submitLabel = 'Add income' }) {
   const [form, setForm] = useState(initial ? { ...emptyState, ...initial } : emptyState)
   const [errors, setErrors] = useState({})
   const { settings } = useSettings()
+  const toast = useToast()
   const symbol = getCurrencySymbol(settings?.currency || 'INR')
+
+  function handleAutoDetectUpi() {
+    if (!navigator.clipboard?.readText) {
+      toast.error('Clipboard reading not supported in this browser.')
+      return
+    }
+    navigator.clipboard.readText().then((text) => {
+      if (!text || !text.trim()) {
+        toast.error('Clipboard is empty. Copy a UPI SMS first!')
+        return
+      }
+      const parsed = parseUpiMessage(text)
+      if (!parsed) {
+        toast.error('Could not parse a UPI amount from clipboard.')
+        return
+      }
+      setForm((prev) => ({
+        ...prev,
+        amount: parsed.amount,
+        title: parsed.title,
+        category: parsed.category !== 'Other' ? parsed.category : prev.category,
+        paymentMethod: 'UPI',
+        date: parsed.date || prev.date,
+        notes: parsed.notes,
+      }))
+      toast.success(`Auto-filled credit from ${parsed.bankName}: ₹${parsed.amount}`)
+    }).catch(() => {
+      toast.error('Could not access clipboard.')
+    })
+  }
 
   function validate() {
     const next = {}
@@ -34,6 +68,17 @@ export default function IncomeForm({ initial, onSubmit, onCancel, submitLabel = 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="flex items-center justify-between pb-2 border-b border-line dark:border-dark-line">
+        <span className="text-xs text-ink-faint">Daily cycle: 12:01 AM</span>
+        <button
+          type="button"
+          onClick={handleAutoDetectUpi}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-forest/10 hover:bg-forest/20 text-forest text-xs font-semibold transition-colors"
+        >
+          <Zap size={13} /> Auto-Fill from UPI Credit SMS
+        </button>
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-ink dark:text-white mb-2">Amount</label>
         <div className="relative">

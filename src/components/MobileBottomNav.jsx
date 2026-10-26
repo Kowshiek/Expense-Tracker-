@@ -1,10 +1,12 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, Plus, PieChart, Settings as SettingsIcon } from 'lucide-react'
 import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, ArrowLeftRight, Plus, PieChart, Settings as SettingsIcon, Zap } from 'lucide-react'
+import UpiImportModal from './UpiImportModal'
 
 export default function MobileBottomNav() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [showUpi, setShowUpi] = useState(false)
 
   const Item = ({ to, label, icon: Icon }) => (
     <NavLink
@@ -25,9 +27,15 @@ export default function MobileBottomNav() {
       {open && (
         <div className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)}>
           <div
-            className="absolute bottom-20 left-4 right-4 rounded-2xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line shadow-xl p-2"
+            className="absolute bottom-20 left-4 right-4 rounded-2xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line shadow-xl p-2 space-y-1"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              onClick={() => { setOpen(false); setShowUpi(true) }}
+              className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold bg-forest-light text-forest"
+            >
+              <Zap size={16} /> Auto-Detect UPI SMS
+            </button>
             <button
               onClick={() => { setOpen(false); navigate('/add-expense') }}
               className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-bg"
@@ -60,6 +68,8 @@ export default function MobileBottomNav() {
           <Item to="/settings" label="Settings" icon={SettingsIcon} />
         </div>
       </nav>
+
+      <UpiImportModal open={showUpi} onClose={() => setShowUpi(false)} />
     </>
   )
 }

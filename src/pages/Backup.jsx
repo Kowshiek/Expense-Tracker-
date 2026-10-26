@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Download, Upload, Trash2, ShieldCheck, HardDrive } from 'lucide-react'
+import { Download, Upload, Trash2, ShieldCheck, HardDrive, RefreshCw, CheckCircle2 } from 'lucide-react'
+import GithubIcon from '../components/GithubIcon'
 import { db } from '../db/database'
 import { exportJSON, exportCSV, importBackupFile } from '../utils/exportImport'
 import { clearAllData } from '../services/settingsService'
@@ -8,6 +9,8 @@ import { useSettings } from '../hooks/useSettings'
 import { useToast } from '../context/ToastContext'
 import { useConfirm } from '../context/ConfirmContext'
 import { formatDateTime } from '../utils/dateHelpers'
+import { syncDatabaseToGithub, getGithubConfig, getGithubSyncStatus } from '../services/githubSyncService'
+import { Link } from 'react-router-dom'
 
 export default function Backup() {
   const { settings, updateSettings } = useSettings()
@@ -15,16 +18,23 @@ export default function Backup() {
   const confirm = useConfirm()
   const fileInputRef = useRef(null)
   const [busy, setBusy] = useState(false)
+  const [syncingGh, setSyncingGh] = useState(false)
+  const [ghStatus, setGhStatus] = useState(getGithubSyncStatus())
+  const ghConfig = getGithubConfig()
 
   const transactionCount = useLiveQuery(() => db.transactions.count(), []) ?? 0
   const budgetCount = useLiveQuery(() => db.budgets.count(), []) ?? 0
 
   const [storageEstimate, setStorageEstimate] = useState(null)
-  useState(() => {
+  useEffect(() => {
     if (navigator.storage?.estimate) {
       navigator.storage.estimate().then(setStorageEstimate)
     }
-  })
+
+    const handleGh = (e) => setGhStatus(e.detail || getGithubSyncStatus())
+    window.addEventListener('spendwise:github-status-updated', handleGh)
+    return () => window.removeEventListener('spendwise:github-status-updated', handleGh)
+  }, [])
 
   async function handleExportJSON() {
     await exportJSON()
@@ -35,6 +45,23 @@ export default function Backup() {
   async function handleExportCSV() {
     const count = await exportCSV()
     toast.success(`Exported ${count} transactions to expenses.csv`)
+  }
+
+  async function handleSyncToGithub() {
+    if (!ghConfig.token) {
+      toast.error('GitHub token missing. Configure token in Settings.')
+      return
+    }
+    setSyncingGh(true)
+    try {
+      await syncDatabaseToGithub()
+      toast.success('Database pushed to GitHub: Kowshiek/Expense-Tracker-')
+      setGhStatus(getGithubSyncStatus())
+    } catch (err) {
+      toast.error(err.message || 'GitHub sync failed.')
+    } finally {
+      setSyncingGh(false)
+    }
   }
 
   async function handleImportClick() {
@@ -76,20 +103,54 @@ export default function Backup() {
       <div className="rounded-2xl bg-forest-light dark:bg-dark-surface border border-forest/20 dark:border-dark-line p-5 flex items-start gap-3">
         <ShieldCheck size={20} className="text-forest shrink-0 mt-0.5" />
         <p className="text-sm text-ink-soft dark:text-ink-faint leading-relaxed">
-          Your data lives only in this browser's IndexedDB. Back it up regularly so you can restore it
-          on another device or after clearing your browser storage.
+          Your primary database runs directly inside this mobile browser's IndexedDB. You can export local backups or automatically sync with GitHub repository{' '}
+          <strong>Kowshiek/Expense-Tracker-</strong>.
         </p>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        <Stat label="Transactions" value={transactionCount} />
-        <Stat label="Budgets" value={budgetCount} />
-        <Stat label="Last backup" value={settings?.lastBackupAt ? formatDateTime(settings.lastBackupAt) : 'Never'} />
-        <Stat label="Storage used" value={usedMB ? `${usedMB} MB of ${quotaMB} MB` : 'Unavailable'} icon={HardDrive} />
+        <Stat label="Transactions in DB" value={transactionCount} />
+        <Stat label="Budgets configured" value={budgetCount} />
+        <Stat label="Last local backup" value={settings?.lastBackupAt ? formatDateTime(settings.lastBackupAt) : 'Never'} />
+        <Stat label="Mobile storage used" value={usedMB ? `${usedMB} MB of ${quotaMB} MB` : 'Unavailable'} icon={HardDrive} />
+      </div>
+
+      {/* GitHub Repository Cloud Sync */}
+      <div className="rounded-2xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <GithubIcon size={18} className="text-ink dark:text-white" />
+            <h3 className="font-display font-semibold text-sm text-ink dark:text-white">
+              GitHub Cloud Repository Sync
+            </h3>
+          </div>
+          <Link to="/settings" className="text-xs text-forest hover:underline">
+            Configure Token
+          </Link>
+        </div>
+        <p className="text-xs text-ink-faint">
+          Target: <strong>https://github.com/Kowshiek/Expense-Tracker-</strong> (Branch: main)
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between pt-1">
+          <div className="text-xs text-ink-soft dark:text-ink-faint flex items-center gap-1.5">
+            {ghStatus.status === 'success' && <CheckCircle2 size={14} className="text-forest" />}
+            {ghStatus.lastSyncedAt
+              ? `Last synced: ${new Date(ghStatus.lastSyncedAt).toLocaleString()}`
+              : 'Status: Idle'}
+          </div>
+          <button
+            onClick={handleSyncToGithub}
+            disabled={syncingGh}
+            className="flex items-center justify-center gap-2 rounded-xl bg-forest text-white px-4 py-2.5 text-sm font-medium hover:bg-forest-dark transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={15} className={syncingGh ? 'animate-spin' : ''} />
+            {syncingGh ? 'Pushing to GitHub…' : 'Sync Database to GitHub'}
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line p-5 space-y-3">
-        <h3 className="font-display font-semibold text-sm text-ink dark:text-white">Export</h3>
+        <h3 className="font-display font-semibold text-sm text-ink dark:text-white">Export Local Files</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           <button onClick={handleExportJSON} className="flex items-center justify-center gap-2 rounded-xl bg-forest text-white px-4 py-2.5 text-sm font-medium hover:bg-forest-dark transition-colors">
             <Download size={16} /> Export full backup (JSON)
