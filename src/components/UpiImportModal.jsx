@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   ArrowDownLeft, ArrowUpRight, CheckCircle2,
-  Copy, Sparkles, AlertCircle, RefreshCw,
+  Copy, Sparkles, AlertCircle, RefreshCw, Zap,
 } from 'lucide-react'
 import Modal from './Modal'
 import { parseUpiMessage, autoAddUpiTransaction } from '../services/upiService'
@@ -57,6 +57,37 @@ export default function UpiImportModal({ open, onClose, onTransactionAdded, init
     }
   }
 
+  const handlePasteAndAutoAdd = async () => {
+    try {
+      if (!navigator.clipboard?.readText) {
+        toast.error('Clipboard access is not permitted in this browser.')
+        return
+      }
+      const text = await navigator.clipboard.readText()
+      if (!text || !text.trim()) {
+        toast.error('Clipboard is empty. Copy a UPI SMS first!')
+        return
+      }
+      setBusy(true)
+      const res = await autoAddUpiTransaction(text)
+      toast.success(
+        `⚡ Automatically added ${res.parsed.type === 'expense' ? 'Debit' : 'Credit'} of ${formatCurrency(
+          res.parsed.amount,
+          currency
+        )} via ${res.parsed.bankName}`
+      )
+      setInputText('')
+      setParsed(null)
+      onTransactionAdded?.(res.transaction)
+      onClose?.()
+    } catch (err) {
+      toast.error(err.message || 'Could not auto-add. Pasting to box instead.')
+      handlePasteClipboard()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handlePasteClipboard = async () => {
     try {
       if (!navigator.clipboard?.readText) {
@@ -101,15 +132,22 @@ export default function UpiImportModal({ open, onClose, onTransactionAdded, init
     <Modal open={open} onClose={onClose} title="⚡ Auto-Detect UPI Transaction">
       <div className="space-y-4">
         <p className="text-xs text-ink-faint leading-relaxed">
-          Paste any UPI or Bank debit/credit notification SMS. SpendWise automatically extracts the amount, banking institution, debited/credited type, and category.
+          Paste any SMS mentioning <strong>debited, send/sent, credited, or received</strong>. SpendWise automatically identifies the amount and banking institution and records it.
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handlePasteAndAutoAdd}
+            disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest text-white text-xs font-semibold hover:bg-forest-dark transition-colors shadow-xs"
+          >
+            <Zap size={14} /> ⚡ Paste &amp; Auto-Add Immediately
+          </button>
           <button
             onClick={handlePasteClipboard}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest/10 hover:bg-forest/20 text-forest text-xs font-semibold transition-colors"
           >
-            <Copy size={14} /> Paste from Clipboard
+            <Copy size={14} /> Paste to Preview
           </button>
         </div>
 

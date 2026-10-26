@@ -1,9 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Wallet, TrendingUp, TrendingDown, CalendarDays, PiggyBank, Receipt,
-  CalendarClock, HardDrive, Zap,
+  CalendarClock, Zap,
 } from 'lucide-react'
-import GithubIcon from '../components/GithubIcon'
 import { useDashboard } from '../hooks/useDashboard'
 import { useTransactions } from '../hooks/useTransactions'
 import DashboardCard from '../components/DashboardCard'
@@ -22,8 +21,7 @@ import { getCategoryMeta } from '../utils/constants'
 import { formatCurrency } from '../utils/currency'
 import { formatDate, formatDateTime } from '../utils/dateHelpers'
 import { useSettings } from '../hooks/useSettings'
-import { checkStorageStatus, requestPersistentMobileStorage } from '../services/storageService'
-import { getGithubConfig, getGithubSyncStatus } from '../services/githubSyncService'
+import { autoAddUpiTransaction, autoAddFromClipboard } from '../services/upiService'
 
 export default function Dashboard() {
   const { stats, loading } = useDashboard()
@@ -32,32 +30,48 @@ export default function Dashboard() {
   const [mode, setMode] = useState(null) // 'view' | 'edit'
   const [showUpiModal, setShowUpiModal] = useState(false)
   const [sharedUpiText, setSharedUpiText] = useState('')
-  const [storageInfo, setStorageInfo] = useState(null)
-  const [ghStatus, setGhStatus] = useState(getGithubSyncStatus())
   const toast = useToast()
   const confirm = useConfirm()
   const { settings } = useSettings()
   const currency = settings?.currency || 'INR'
   const navigate = useNavigate()
-  const ghConfig = getGithubConfig()
 
   useEffect(() => {
-    checkStorageStatus().then(setStorageInfo)
-    requestPersistentMobileStorage().catch(() => {})
-
     // Check if opened via Web Share Target (e.g. from SMS app)
     const urlParams = new URLSearchParams(window.location.search)
     const textParam = urlParams.get('text') || urlParams.get('title')
     if (textParam) {
-      setSharedUpiText(textParam)
-      setShowUpiModal(true)
+      autoAddUpiTransaction(textParam)
+        .then((res) => {
+          toast.success(
+            `⚡ Automatically added ${res.parsed.type === 'expense' ? 'Expense' : 'Income'} of ${formatCurrency(
+              res.parsed.amount,
+              currency
+            )} via ${res.parsed.bankName}!`
+          )
+        })
+        .catch(() => {
+          setSharedUpiText(textParam)
+          setShowUpiModal(true)
+        })
       window.history.replaceState({}, document.title, window.location.pathname)
     }
+  }, [currency, toast])
 
-    const handleGhUpdate = (e) => setGhStatus(e.detail || getGithubSyncStatus())
-    window.addEventListener('spendwise:github-status-updated', handleGhUpdate)
-    return () => window.removeEventListener('spendwise:github-status-updated', handleGhUpdate)
-  }, [])
+  const handleAutoAddFromClipboard = async () => {
+    try {
+      const res = await autoAddFromClipboard()
+      toast.success(
+        `⚡ Automatically added ${res.parsed.type === 'expense' ? 'Expense' : 'Income'} of ${formatCurrency(
+          res.parsed.amount,
+          currency
+        )} via ${res.parsed.bankName}!`
+      )
+    } catch {
+      // Fallback: open modal for manual paste or preview
+      setShowUpiModal(true)
+    }
+  }
 
   if (loading) return <LoadingSpinner label="Loading your dashboard…" />
 
@@ -89,43 +103,8 @@ export default function Dashboard() {
       <DailyCycleWidget
         onOpenUpi={() => setShowUpiModal(true)}
         onAddExpense={() => navigate('/add-expense')}
+        onAutoAddClipboard={handleAutoAddFromClipboard}
       />
-
-      {/* System Status Banner: Mobile DB & GitHub Auto-Sync */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line">
-          <HardDrive size={16} className="text-forest shrink-0" />
-          <div className="truncate">
-            <span className="font-semibold text-ink dark:text-white">Mobile Storage: </span>
-            <span className="text-ink-soft dark:text-ink-faint">
-              IndexedDB Active {storageInfo?.persisted ? '· Persistent' : ''} (
-              {storageInfo ? `${storageInfo.usageMB} MB` : 'Checking…'})
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-3 rounded-xl bg-paper-raised dark:bg-dark-surface border border-line dark:border-dark-line">
-          <div className="flex items-center gap-2.5 truncate">
-            <GithubIcon size={16} className="text-ink-faint shrink-0" />
-            <div className="truncate">
-              <span className="font-semibold text-ink dark:text-white">GitHub: </span>
-              <span className="text-ink-soft dark:text-ink-faint">
-                {ghConfig.token
-                  ? ghStatus.lastSyncedAt
-                    ? `Synced (${new Date(ghStatus.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
-                    : 'Auto-Sync Active'
-                  : 'Not Connected'}
-              </span>
-            </div>
-          </div>
-          <Link
-            to="/settings"
-            className="text-forest hover:text-forest-dark font-medium shrink-0 ml-2"
-          >
-            {ghConfig.token ? 'Manage' : 'Connect'}
-          </Link>
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard label="Total balance" amount={stats.totalBalance} icon={Wallet} tone="navy" sub="income minus expenses" />
@@ -149,11 +128,12 @@ export default function Dashboard() {
         <h2 className="font-display font-semibold text-lg text-ink dark:text-white">Recent activity</h2>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowUpiModal(true)}
+            onClick={handleAutoAddFromClipboard}
             className="text-xs font-semibold text-forest flex items-center gap-1 hover:underline"
+            title="Auto-detect and add copied UPI SMS"
           >
             <Zap size={13} />
-            <span>Auto-UPI</span>
+            <span>⚡ Auto-Add SMS</span>
           </button>
           <Link to="/transactions" className="text-sm font-medium text-forest hover:text-forest-dark transition-colors">
             View all

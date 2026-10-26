@@ -55,6 +55,34 @@ const testCases = [
     expectedAmount: 1200,
     expectedBank: 'Paytm Payments Bank',
   },
+  {
+    name: 'Send Keyword Test',
+    sms: 'You send Rs 250 to Ramesh via PhonePe UPI. Ref: 983274982',
+    expectedType: 'expense',
+    expectedAmount: 250,
+    expectedBank: 'PhonePe',
+  },
+  {
+    name: 'Debited Keyword Test',
+    sms: '350.00 debited from Axis Bank A/c 4321 for groceries',
+    expectedType: 'expense',
+    expectedAmount: 350,
+    expectedBank: 'Axis Bank',
+  },
+  {
+    name: 'Received Keyword Test',
+    sms: 'Received Rs 500 in Google Pay from Friend',
+    expectedType: 'income',
+    expectedAmount: 500,
+    expectedBank: 'Google Pay',
+  },
+  {
+    name: 'Credited Keyword Test',
+    sms: 'A/c XX890 credited by Rs 2500 from UPI/Kotak Ref 8392819',
+    expectedType: 'income',
+    expectedAmount: 2500,
+    expectedBank: 'Kotak Mahindra Bank',
+  },
 ]
 
 let allPassed = true

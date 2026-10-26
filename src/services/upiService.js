@@ -102,10 +102,10 @@ export function parseUpiMessage(rawText) {
   const text = rawText.trim()
 
   // 1. Determine Debit vs Credit
-  // Patterns for debit/expense
-  const debitRegex = /(?:debited|debit|paid|sent|transferred\s+to|spent|withdrawn|purchase(?:d)?)/i
-  // Patterns for credit/income
-  const creditRegex = /(?:credited|credit|received|transferred\s+from|deposited|added\s+to|refund(?:ed)?|cashback)/i
+  // Patterns for debit/expense (debited, send, sent, paid, spent)
+  const debitRegex = /(?:debited|debit|paid|sent|send|spent|spending|transferred\s+to|withdrawn|purchase(?:d)?)/i
+  // Patterns for credit/income (credited, received, receive, deposited)
+  const creditRegex = /(?:credited|credit|received|receive|transferred\s+from|deposited|deposit|added\s+to|refund(?:ed)?|cashback)/i
 
   const isDebit = debitRegex.test(text)
   const isCredit = creditRegex.test(text)
@@ -126,12 +126,13 @@ export function parseUpiMessage(rawText) {
   }
 
   // 2. Extract Amount
-  // Matches: Rs. 500, Rs 1,500.50, INR 250, ₹100, debited by 300, etc.
+  // Matches: Rs. 500, Rs 1,500.50, INR 250, ₹100, debited by 300, 300 debited, sent 500, etc.
   const amountPatterns = [
     /(?:Rs\.?|INR|₹)\s*([\d,]+(?:\.\d{1,2})?)/i,
-    /(?:debited|credited)\s+(?:by|for|with)?\s*(?:Rs\.?|INR|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /(?:debited|credited|paid|sent|send|received|receive|spent)\s+(?:by|for|with|of)?\s*(?:Rs\.?|INR|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /([\d,]+(?:\.\d{1,2})?)\s*(?:Rs\.?|INR|₹)?\s+(?:debited|credited|paid|sent|send|received)/i,
     /(?:amount|amt)\s*(?:of)?\s*(?:Rs\.?|INR|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i,
-    /(?:paying|paid|sent|received)\s+(?:Rs\.?|INR|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /(?:paying|paid|sent|send|received|receive)\s+(?:Rs\.?|INR|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i,
   ]
 
   let amount = null
@@ -257,4 +258,18 @@ export async function autoAddUpiTransaction(rawText) {
     parsed,
     transaction: saved,
   }
+}
+
+/**
+ * Reads SMS/transaction text directly from clipboard and automatically adds it!
+ */
+export async function autoAddFromClipboard() {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.readText) {
+    throw new Error('Clipboard access is not permitted in this browser.')
+  }
+  const text = await navigator.clipboard.readText()
+  if (!text || !text.trim()) {
+    throw new Error('Clipboard is empty. Copy an SMS message first!')
+  }
+  return autoAddUpiTransaction(text)
 }

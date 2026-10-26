@@ -6,7 +6,7 @@ import { formatDate } from '../utils/dateHelpers'
 import { useSettings } from '../hooks/useSettings'
 import { useToast } from '../context/ToastContext'
 
-export default function DailyCycleWidget({ onOpenUpi, onAddExpense }) {
+export default function DailyCycleWidget({ onOpenUpi, onAddExpense, onAutoAddClipboard }) {
   const [metrics, setMetrics] = useState(null)
   const [pastLogs, setPastLogs] = useState([])
   const [showHistory, setShowHistory] = useState(false)
@@ -77,10 +77,11 @@ export default function DailyCycleWidget({ onOpenUpi, onAddExpense }) {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={onOpenUpi}
+            onClick={onAutoAddClipboard || onOpenUpi}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-forest/10 hover:bg-forest/20 text-forest text-xs font-semibold transition-colors"
+            title="Auto-detect and add copied SMS transaction"
           >
-            <Zap size={14} /> Auto-Log UPI
+            <Zap size={14} /> ⚡ Auto-Add SMS
           </button>
           <button
             onClick={onAddExpense}
