@@ -10,12 +10,13 @@ export function getGithubConfig() {
   } catch {
     // fallback
   }
+  const defaultToken = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GITHUB_TOKEN) || ''
   return {
     repoUrl: 'https://github.com/Kowshiek/Expense-Tracker-',
     owner: 'Kowshiek',
     repo: 'Expense-Tracker-',
     branch: 'main',
-    token: '',
+    token: defaultToken,
     autoSync: true,
     syncPath: 'data/expenses-database.json',
   }
